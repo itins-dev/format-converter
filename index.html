@@ -131,14 +131,13 @@
 
       const formData = new FormData();
       formData.append('image', imageFile);
-      formData.append('format', format);
 
       convertBtn.disabled = true;
       convertBtn.textContent = 'Converting...';
       messageDiv.innerHTML = '<div class="loading">Converting your image...</div>';
 
       try {
-        const response = await fetch('/convert', {
+        const response = await fetch(`/convert?format=${format}`, {
           method: 'POST',
           body: formData
         });
