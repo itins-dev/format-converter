@@ -5,109 +5,398 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Image Format Converter</title>
   <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      max-width: 600px;
-      margin: 50px auto;
-      padding: 20px;
-      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      background-attachment: fixed;
     }
-    .container {
-      background: white;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+
+    .card {
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 24px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 32px 64px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255,255,255,0.05) inset;
     }
-    h1 {
-      color: #333;
-      text-align: center;
-    }
-    .form-group {
-      margin: 20px 0;
-    }
-    label {
-      display: block;
+
+    .logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
       margin-bottom: 8px;
+    }
+
+    .logo-icon {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, #a78bfa, #6366f1);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.5);
+    }
+
+    .logo-icon svg {
+      width: 22px;
+      height: 22px;
+      fill: white;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.3px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: rgba(255,255,255,0.45);
+      font-size: 14px;
+      margin-bottom: 36px;
+    }
+
+    /* Drop Zone */
+    .drop-zone {
+      border: 2px dashed rgba(255,255,255,0.2);
+      border-radius: 16px;
+      padding: 36px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: rgba(255,255,255,0.03);
+      position: relative;
+      margin-bottom: 24px;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: #a78bfa;
+      background: rgba(167, 139, 250, 0.08);
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drop-icon {
+      width: 52px;
+      height: 52px;
+      margin: 0 auto 14px;
+      background: rgba(167,139,250,0.15);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .drop-icon svg {
+      width: 26px;
+      height: 26px;
+      stroke: #a78bfa;
+      fill: none;
+    }
+
+    .drop-zone-text {
+      color: rgba(255,255,255,0.7);
+      font-size: 15px;
       font-weight: 500;
-      color: #333;
     }
-    input[type="file"] {
-      display: block;
-      width: 100%;
-      padding: 10px;
-      border: 2px solid #ddd;
-      border-radius: 4px;
-      cursor: pointer;
+
+    .drop-zone-hint {
+      color: rgba(255,255,255,0.3);
+      font-size: 12px;
+      margin-top: 6px;
     }
-    select {
-      width: 100%;
-      padding: 10px;
-      border: 2px solid #ddd;
-      border-radius: 4px;
-      font-size: 16px;
-      cursor: pointer;
+
+    /* Preview */
+    .preview-wrap {
+      display: none;
+      align-items: center;
+      gap: 14px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 24px;
+      border: 1px solid rgba(255,255,255,0.08);
     }
-    button {
-      width: 100%;
-      padding: 12px;
-      background: #007bff;
-      color: white;
+
+    .preview-wrap.visible { display: flex; }
+
+    .preview-thumb {
+      width: 56px;
+      height: 56px;
+      border-radius: 8px;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .preview-info { flex: 1; overflow: hidden; }
+
+    .preview-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .preview-size {
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+      margin-top: 2px;
+    }
+
+    .preview-remove {
+      background: none;
       border: none;
-      border-radius: 4px;
-      font-size: 16px;
+      cursor: pointer;
+      color: rgba(255,255,255,0.35);
+      padding: 4px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      transition: color 0.2s;
+      width: auto;
+    }
+
+    .preview-remove:hover { color: #f87171; background: rgba(248,113,113,0.1); }
+    .preview-remove svg { width: 16px; height: 16px; stroke: currentColor; fill: none; }
+
+    /* Format selector */
+    .format-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .format-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .format-option {
+      position: relative;
+    }
+
+    .format-option input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .format-option label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1.5px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+      color: rgba(255,255,255,0.6);
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.3s;
+      transition: all 0.2s;
+      user-select: none;
     }
-    button:hover {
-      background: #0056b3;
+
+    .format-option label .fmt-icon {
+      font-size: 18px;
     }
-    button:disabled {
-      background: #ccc;
+
+    .format-option input:checked + label {
+      border-color: #a78bfa;
+      background: rgba(167,139,250,0.15);
+      color: #fff;
+      box-shadow: 0 0 0 1px #a78bfa;
+    }
+
+    .format-option label:hover {
+      border-color: rgba(167,139,250,0.5);
+      background: rgba(167,139,250,0.08);
+      color: rgba(255,255,255,0.85);
+    }
+
+    /* Convert button */
+    .btn-convert {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #a78bfa, #6366f1);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+      letter-spacing: 0.2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-convert svg {
+      width: 20px;
+      height: 20px;
+      stroke: white;
+      fill: none;
+      flex-shrink: 0;
+    }
+
+    .btn-convert:hover:not(:disabled) {
+      opacity: 0.92;
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(99, 102, 241, 0.5);
+    }
+
+    .btn-convert:active:not(:disabled) { transform: translateY(0); }
+
+    .btn-convert:disabled {
+      opacity: 0.45;
       cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
     }
+
+    /* Spinner */
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2.5px solid rgba(255,255,255,0.35);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Messages */
     .message {
       margin-top: 20px;
-      padding: 12px;
-      border-radius: 4px;
-      text-align: center;
+      padding: 14px 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideIn 0.25s ease;
     }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .message svg { width: 18px; height: 18px; flex-shrink: 0; }
+
     .success {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
+      background: rgba(52, 211, 153, 0.12);
+      color: #6ee7b7;
+      border: 1px solid rgba(52, 211, 153, 0.25);
     }
+
     .error {
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
+      background: rgba(248, 113, 113, 0.12);
+      color: #fca5a5;
+      border: 1px solid rgba(248, 113, 113, 0.25);
     }
-    .loading {
-      text-align: center;
-      color: #007bff;
+
+    .loading-msg {
+      background: rgba(167, 139, 250, 0.12);
+      color: #c4b5fd;
+      border: 1px solid rgba(167, 139, 250, 0.25);
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Image Format Converter</h1>
-    
+  <div class="card">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M4 16l4-4 4 4 4-8 4 8"/></svg>
+      </div>
+      <h1>Image Converter</h1>
+    </div>
+    <p class="subtitle">Upload any image and convert it to your preferred format</p>
+
     <form id="converterForm">
-      <div class="form-group">
-        <label for="image">Select Image:</label>
+      <!-- Drop Zone -->
+      <div class="drop-zone" id="dropZone">
         <input type="file" id="image" name="image" accept="image/*" required>
+        <div class="drop-icon">
+          <svg viewBox="0 0 24 24" stroke-width="1.8">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <div class="drop-zone-text">Drop your image here</div>
+        <div class="drop-zone-hint">or click to browse &mdash; PNG, JPG, WEBP, GIF, BMP</div>
       </div>
 
-      <div class="form-group">
-        <label for="format">Convert to:</label>
-        <select id="format" name="format" required>
-          <option value="">-- Select Format --</option>
-          <option value="jpg">JPG</option>
-          <option value="png">PNG</option>
-        </select>
+      <!-- Preview -->
+      <div class="preview-wrap" id="previewWrap">
+        <img class="preview-thumb" id="previewThumb" src="" alt="preview">
+        <div class="preview-info">
+          <div class="preview-name" id="previewName"></div>
+          <div class="preview-size" id="previewSize"></div>
+        </div>
+        <button type="button" class="preview-remove" id="removeBtn" title="Remove">
+          <svg viewBox="0 0 24 24" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
 
-      <button type="submit" id="convertBtn">Convert</button>
+      <!-- Format -->
+      <span class="format-label">Convert to</span>
+      <div class="format-grid">
+        <div class="format-option">
+          <input type="radio" name="format" id="fmt-jpg" value="jpg">
+          <label for="fmt-jpg"><span class="fmt-icon">🖼</span> JPG</label>
+        </div>
+        <div class="format-option">
+          <input type="radio" name="format" id="fmt-png" value="png">
+          <label for="fmt-png"><span class="fmt-icon">✨</span> PNG</label>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-convert" id="convertBtn">
+        <svg viewBox="0 0 24 24" stroke-width="2.2">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+        </svg>
+        Convert &amp; Download
+      </button>
     </form>
 
     <div id="message"></div>
@@ -117,34 +406,73 @@
     const form = document.getElementById('converterForm');
     const messageDiv = document.getElementById('message');
     const convertBtn = document.getElementById('convertBtn');
+    const dropZone = document.getElementById('dropZone');
+    const imageInput = document.getElementById('image');
+    const previewWrap = document.getElementById('previewWrap');
+    const previewThumb = document.getElementById('previewThumb');
+    const previewName = document.getElementById('previewName');
+    const previewSize = document.getElementById('previewSize');
+    const removeBtn = document.getElementById('removeBtn');
+
+    // Drag and drop visual feedback
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) setFile(file);
+    });
+
+    imageInput.addEventListener('change', () => {
+      if (imageInput.files[0]) setFile(imageInput.files[0]);
+    });
+
+    removeBtn.addEventListener('click', () => {
+      imageInput.value = '';
+      previewWrap.classList.remove('visible');
+      dropZone.style.display = '';
+    });
+
+    function setFile(file) {
+      previewName.textContent = file.name;
+      previewSize.textContent = formatBytes(file.size);
+      const reader = new FileReader();
+      reader.onload = (e) => { previewThumb.src = e.target.result; };
+      reader.readAsDataURL(file);
+      previewWrap.classList.add('visible');
+      dropZone.style.display = 'none';
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const imageFile = document.getElementById('image').files[0];
-      const format = document.getElementById('format').value;
+      const imageFile = imageInput.files[0];
+      const formatRadio = form.querySelector('input[name="format"]:checked');
 
-      if (!imageFile || !format) {
-        showMessage('Please select both image and format', 'error');
-        return;
-      }
+      if (!imageFile) { showMessage('Please select an image to convert.', 'error'); return; }
+      if (!formatRadio) { showMessage('Please choose a target format.', 'error'); return; }
 
+      const format = formatRadio.value;
       const formData = new FormData();
       formData.append('image', imageFile);
 
       convertBtn.disabled = true;
-      convertBtn.textContent = 'Converting...';
-      messageDiv.innerHTML = '<div class="loading">Converting your image...</div>';
+      convertBtn.innerHTML = '<div class="spinner"></div> Converting…';
+      messageDiv.innerHTML = '<div class="message loading-msg"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Processing your image…</div>';
 
       try {
-        const response = await fetch(`/convert?format=${format}`, {
-          method: 'POST',
-          body: formData
-        });
+        const response = await fetch(`/convert?format=${format}`, { method: 'POST', body: formData });
 
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error);
+          const err = await response.json();
+          throw new Error(err.error || 'Conversion failed');
         }
 
         const blob = await response.blob();
@@ -157,20 +485,22 @@
         window.URL.revokeObjectURL(url);
         a.remove();
 
-        showMessage('Image converted and downloaded successfully!', 'success');
+        showMessage('Image converted and downloaded!', 'success');
       } catch (error) {
-        showMessage(`Error: ${error.message}`, 'error');
+        showMessage(error.message, 'error');
       } finally {
         convertBtn.disabled = false;
-        convertBtn.textContent = 'Convert';
+        convertBtn.innerHTML = '<svg viewBox="0 0 24 24" stroke="white" fill="none" stroke-width="2.2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>Convert &amp; Download';
       }
     });
 
     function showMessage(text, type) {
-      messageDiv.innerHTML = `<div class="message ${type}">${text}</div>`;
-      setTimeout(() => {
-        messageDiv.innerHTML = '';
-      }, 5000);
+      const icons = {
+        success: '<svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+        error: '<svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+      };
+      messageDiv.innerHTML = `<div class="message ${type}">${icons[type] || ''}${text}</div>`;
+      setTimeout(() => { messageDiv.innerHTML = ''; }, 5000);
     }
   </script>
 </body>
